@@ -126,7 +126,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       });
       if (res.ok) {
         fetchInvoices();
-        alert("Invoice Deleted Success.")
+        alert("Invoice Deleted Success.");
       }
     } catch (err) {
       console.error("Error deleting invoice", err);
@@ -248,20 +248,26 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                 <div
                   key={inv._id}
                   onClick={() => handleInvoiceClick(inv)}
-                  className="p-3 rounded-lg bg-slate-700 text-white hover:bg-slate-600 cursor-pointer flex justify-between"
-                > 
+                  className="p-3 rounded-lg bg-slate-700 text-white hover:bg-slate-600 cursor-pointer flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2"
+                >
                   <div>
-                    <p className="font-medium">Name: {inv.vendorName}</p>
-                    <p className="text-sm">
+                    <p className="font-medium text-sm sm:text-base">
+                      Name: {inv.vendorName}
+                    </p>
+                    <p className="text-xs sm:text-sm">
                       Date: {new Date(inv.date).toLocaleDateString()}
                     </p>
-                    <p className="text-sm">Category : {inv.category}</p>
-                  </div>
-                  <div className="text-right flex flex-col justify-center">
-                    <p className="text-sm text-slate-300">
-                      GST:  ₹{inv.gstAmount}
+                    <p className="text-xs sm:text-sm">
+                      Category: {inv.category}
                     </p>
-                    <p className="font-medium">Total Bill: ₹{inv.totalAmount}</p>
+                  </div>
+                  <div className="text-left sm:text-right">
+                    <p className="text-xs text-slate-300">
+                      GST: ₹{inv.gstAmount}
+                    </p>
+                    <p className="font-medium text-sm sm:text-base">
+                      Total Bill: ₹{inv.totalAmount}
+                    </p>
                   </div>
                 </div>
               ))
@@ -295,30 +301,36 @@ export default function Dashboard({ onLogout }: DashboardProps) {
               filteredInvoices.map((inv) => (
                 <div
                   key={inv._id}
-                  className="p-3 sm:p-4 border border-slate-600 rounded-lg text-white hover:bg-slate-700 flex justify-between items-center cursor-pointer mb-2"
+                  className="p-3 sm:p-4 border border-slate-600 rounded-lg text-white hover:bg-slate-700 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-2"
                 >
                   <div
                     onClick={() => handleInvoiceClick(inv)}
                     className="space-y-1 flex-1 cursor-pointer"
                   >
-                    <p className="font-medium">Name: {inv.vendorName}</p>
-                    <p className="text-sm text-slate-300">
+                    <p className="font-medium text-sm sm:text-base">
+                      Name: {inv.vendorName}
+                    </p>
+                    <p className="text-xs sm:text-sm text-slate-300">
                       Date: {new Date(inv.date).toLocaleDateString()}
                     </p>
-                    <p className="text-sm text-slate-300">
+                    <p className="text-xs sm:text-sm text-slate-300">
                       Category: {inv.category}
                     </p>
                   </div>
-                  <div className="text-right mr-4 space-y-1">
-                    <p className="text-sm text-slate-300">
+
+                  <div className="text-left sm:text-right sm:mr-4 space-y-1">
+                    <p className="text-xs sm:text-sm text-slate-300">
                       GST: ₹{inv.gstAmount}
                     </p>
-                    <p className="font-medium">Total Bill: ₹{inv.totalAmount}</p>
+                    <p className="font-medium text-sm sm:text-base">
+                      Total Bill: ₹{inv.totalAmount}
+                    </p>
                   </div>
+
                   <Button
                     variant="destructive"
                     onClick={() => handleDeleteInvoice(inv._id)}
-                    className="h-8 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
+                    className="h-8 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm w-fit"
                   >
                     Delete
                   </Button>

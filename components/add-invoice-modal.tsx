@@ -91,77 +91,87 @@ export default function AddInvoiceModal({
   }, [editingInvoice, isOpen]);
 
   const extractInvoiceData = (text: string) => {
-  const lines = text.split("\n");
-  let invoiceData: Partial<Invoice> = {};
+    const lines = text.split("\n");
+    let invoiceData: Partial<Invoice> = {};
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim().toLowerCase();
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim().toLowerCase();
 
-    // Date (supports multiple labels and formats)
-    if (line.includes("date")) {
-      const dateMatch = line.match(/\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}/);
-      if (dateMatch) {
-        const rawDate = dateMatch[0];
-        invoiceData.date = rawDate.includes("/") ? new Date(rawDate).toISOString().split("T")[0] : rawDate;
+      // Date (supports multiple labels and formats)
+      if (line.includes("date")) {
+        const dateMatch = line.match(/\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}/);
+        if (dateMatch) {
+          const rawDate = dateMatch[0];
+          invoiceData.date = rawDate.includes("/")
+            ? new Date(rawDate).toISOString().split("T")[0]
+            : rawDate;
+        }
+      }
+
+      // Vendor / Supplier / Seller / Billed By
+      if (
+        line.includes("vendor name") ||
+        line.includes("vendor") ||
+        line.includes("billed by") ||
+        line.includes("billed from") ||
+        line.includes("supplier") ||
+        line.includes("seller") ||
+        line.includes("provided by")
+      ) {
+        const name = lines[i].split(":")[1]?.trim();
+        if (name) invoiceData.vendorName = name;
+      }
+
+      // Employee / Billed To / Buyer
+      if (
+        line.includes("employee name") ||
+        line.includes("employee") ||
+        line.includes("billed to") ||
+        line.includes("received by") ||
+        line.includes("for employee") ||
+        line.includes("customer") ||
+        line.includes("buyer")
+      ) {
+        const name = lines[i].split(":")[1]?.trim();
+        if (name) invoiceData.employeeName = name;
+      }
+
+      // Category / Type
+      if (
+        line.includes("category") ||
+        line.includes("type of expense") ||
+        line.includes("expense category")
+      ) {
+        const category = lines[i].split(":")[1]?.trim();
+        if (category) invoiceData.category = category;
+      }
+
+      // GST Amount / Tax
+      if (
+        line.includes("gst") ||
+        line.includes("tax amount") ||
+        line.includes("cgst") ||
+        line.includes("sgst")
+      ) {
+        const gstMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
+        if (gstMatch) invoiceData.gstAmount = gstMatch[1];
+      }
+
+      // Total Amount / Grand Total / Amount Payable
+      if (
+        line.startsWith("total amount") ||
+        line.includes("grand total") ||
+        line.includes("amount payable") ||
+        line.includes("total payable") ||
+        line.includes("total (inr)")
+      ) {
+        const totalMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
+        if (totalMatch) invoiceData.totalAmount = totalMatch[1];
       }
     }
 
-    // Vendor / Supplier / Seller / Billed By
-    if (
-      line.includes("vendor name") ||
-      line.includes("vendor") ||
-      line.includes("billed by") ||
-      line.includes("billed from") ||
-      line.includes("supplier") ||
-      line.includes("seller") ||
-      line.includes("provided by")
-    ) {
-      const name = lines[i].split(":")[1]?.trim();
-      if (name) invoiceData.vendorName = name;
-    }
-
-    // Employee / Billed To / Buyer
-    if (
-      line.includes("employee name") ||
-      line.includes("employee") ||
-      line.includes("billed to") ||
-      line.includes("received by") ||
-      line.includes("for employee") ||
-      line.includes("customer") ||
-      line.includes("buyer")
-    ) {
-      const name = lines[i].split(":")[1]?.trim();
-      if (name) invoiceData.employeeName = name;
-    }
-
-    // Category / Type
-    if (line.includes("category") || line.includes("type of expense") || line.includes("expense category")) {
-      const category = lines[i].split(":")[1]?.trim();
-      if (category) invoiceData.category = category;
-    }
-
-    // GST Amount / Tax
-    if (line.includes("gst") || line.includes("tax amount") || line.includes("cgst") || line.includes("sgst")) {
-      const gstMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
-      if (gstMatch) invoiceData.gstAmount = gstMatch[1];
-    }
-
-    // Total Amount / Grand Total / Amount Payable
-    if (
-      line.startsWith("total amount") ||
-      line.includes("grand total") ||
-      line.includes("amount payable") ||
-      line.includes("total payable") ||
-      line.includes("total (inr)")
-    ) {
-      const totalMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
-      if (totalMatch) invoiceData.totalAmount = totalMatch[1];
-    }
-  }
-
-  return invoiceData;
-};
-
+    return invoiceData;
+  };
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -197,51 +207,6 @@ export default function AddInvoiceModal({
       setStep("upload");
     }
   };
-
-  // const extractField = (text: string, keywords: string[]): string => {
-  //   const lines = text.split("\n");
-  //   for (let line of lines) {
-  //     const lowerLine = line.toLowerCase();
-  //     for (const keyword of keywords) {
-  //       const lowerKeyword = keyword.toLowerCase();
-  //       if (lowerLine.includes(lowerKeyword)) {
-  //         // Handle cases with colon separator
-  //         if (line.includes(":")) {
-  //           return line.split(":")[1].trim();
-  //         }
-  //         // Handle cases where the value is on the next line
-  //         const nextLineIndex = lines.indexOf(line) + 1;
-  //         if (nextLineIndex < lines.length) {
-  //           return lines[nextLineIndex].trim();
-  //         }
-  //         return line.trim();
-  //       }
-  //     }
-  //   }
-  //   return "";
-  // };
-
-  // const extractAmount = (text: string, label: string): string => {
-  //   // Handle multiple currency symbols and formats
-  //   const regex = new RegExp(
-  //     `${label}\\s*[:\\-]?\\s*[₹£¥$]?\\s*(\\d+[.,]?\\d*)`,
-  //     "i"
-  //   );
-  //   const match = text.match(regex);
-  //   return match ? match[1].replace(",", "") : "";
-  // };
-
-  // const extractDate = (text: string): string => {
-  //   // Match formats like 2025-06-25 (ISO format)
-  //   const dateRegex = /(\d{4}[\/\-]\d{2}[\/\-]\d{2})/;
-  //   const match = text.match(dateRegex);
-  //   if (match) {
-  //     return match[0]; // Return as-is if it's already in YYYY-MM-DD format
-  //   }
-
-  //   // Fallback to current date if not found
-  //   return new Date().toISOString().split("T")[0];
-  // };
 
   const handleInputChange = (field: keyof Invoice, value: string | number) => {
     setExtractedData((prev) => ({ ...prev, [field]: value }));
@@ -288,7 +253,10 @@ export default function AddInvoiceModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto mx-4">
+      <DialogContent
+        className="w-[95vw] sm:w-full max-w-md bg-slate-800 border-slate-700 max-h-[90vh] overflow-y-auto 
+             mx-auto sm:mx-4 sm:left-1/2 sm:translate-x-[-50%] sm:top-[10%] sm:translate-y-0"
+      >
         <DialogHeader>
           <DialogTitle className="text-slate-100">
             {editingInvoice ? "Edit Invoice" : "Add New Invoice"}
