@@ -1,5 +1,3 @@
-"use client";
-
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
 import Tesseract from "tesseract.js";
@@ -15,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Camera, Upload, Check, Edit } from "lucide-react";
 
 interface Invoice {
-  id?: string;
+  _id?: string;
   date: string;
   vendorName: string;
   employeeName: string;
@@ -29,7 +27,7 @@ interface Invoice {
 interface AddInvoiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (invoice: Invoice) => void;
+  onSave: (invoice: Invoice) => void; // ✅ This must be a function
   editingInvoice?: Invoice | null;
 }
 
@@ -43,6 +41,7 @@ export default function AddInvoiceModal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [customCategory, setCustomCategory] = useState("");
   const [customCategoryError, setCustomCategoryError] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const categoryOptions = [
     "Mobile bill",
@@ -179,6 +178,8 @@ export default function AddInvoiceModal({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    setSelectedFile(file); // ✅ Save actual File object
+
     const imageUrl = URL.createObjectURL(file);
     setSelectedImage(imageUrl);
     setStep("extract");
@@ -223,14 +224,51 @@ export default function AddInvoiceModal({
     }
   };
 
-  const handleSave = () => {
+  // In AddInvoiceModal component
+  const handleSave = async () => {
     if (extractedData.category === "Others" && customCategory.length < 20) {
       setCustomCategoryError(
         "Custom category must be at least 20 characters long"
       );
       return;
     }
-    onSave(extractedData);
+
+    let fileUrl = extractedData.imageUrl || "";
+
+    // Only upload new file if we're not editing or if we have a new file
+    if (selectedFile && (!editingInvoice || (editingInvoice && selectedFile))) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      try {
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        fileUrl = uploadData.url;
+      } catch (err) {
+        console.error("Upload failed:", err);
+        alert("Failed to upload file");
+        return;
+      }
+    }
+
+    const invoicePayload = {
+      ...extractedData,
+      imageUrl: fileUrl,
+      // Include _id if editing
+      ...(editingInvoice && { _id: editingInvoice._id }),
+    };
+
+    // Call the appropriate function based on whether we're editing
+    if (editingInvoice) {
+      onSave({ ...invoicePayload, _id: editingInvoice._id }); // Ensure _id is included
+    } else {
+      onSave(invoicePayload);
+    }
+
     handleClose();
   };
 

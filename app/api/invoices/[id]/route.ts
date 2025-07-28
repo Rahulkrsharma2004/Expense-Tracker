@@ -8,6 +8,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     // await connectDb();
     console.log(params)
     const body = await req.json();
+    console.log("Update Body:", body);
     const updated = await Invoice.findByIdAndUpdate(params.id, body, { new: true });
     return NextResponse.json(updated);
   } catch (error) {
