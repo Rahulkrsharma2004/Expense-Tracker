@@ -42,6 +42,7 @@ export default function AddInvoiceModal({
   const [customCategory, setCustomCategory] = useState("");
   const [customCategoryError, setCustomCategoryError] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const categoryOptions = [
     "Mobile bill",
@@ -232,6 +233,7 @@ export default function AddInvoiceModal({
       );
       return;
     }
+    setIsSaving(true); // Start loading state
 
     let fileUrl = extractedData.imageUrl || "";
 
@@ -251,7 +253,11 @@ export default function AddInvoiceModal({
       } catch (err) {
         console.error("Upload failed:", err);
         alert("Failed to upload file");
+        setIsSaving(false); // Stop loading on error
         return;
+      }
+      finally {
+        setIsSaving(false); // Stop loading state after upload
       }
     }
 
@@ -536,12 +542,22 @@ export default function AddInvoiceModal({
                 onClick={handleSave}
                 className="bg-slate-600 hover:bg-slate-500 text-white order-1 sm:order-2"
                 disabled={
-                  extractedData.category === "Others" &&
-                  customCategory.length < 20
+                  isSaving ||
+                  (extractedData.category === "Others" &&
+                    customCategory.length < 20)
                 }
               >
-                <Check className="h-4 w-4 mr-2" />
-                {editingInvoice ? "Update Invoice" : "Save Invoice"}
+                {isSaving ? (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>{editingInvoice ? "Updating..." : "Saving..."}</span>
+                  </div>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    {editingInvoice ? "Update Invoice" : "Save Invoice"}
+                  </>
+                )}
               </Button>
             </div>
           </div>
