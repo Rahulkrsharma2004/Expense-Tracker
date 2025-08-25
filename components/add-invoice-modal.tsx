@@ -90,125 +90,184 @@ export default function AddInvoiceModal({
     }
   }, [editingInvoice, isOpen]);
 
+
+
+  // const extractInvoiceData = (text: string) => {
+  //   const lines = text.split("\n");
+  //   let invoiceData: Partial<Invoice> = {};
+
+  //   for (let i = 0; i < lines.length; i++) {
+  //     const line = lines[i].trim().toLowerCase();
+
+  //     if (line.includes("date")) {
+  //       const dateMatch = line.match(/\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}/);
+  //       if (dateMatch) {
+  //         const rawDate = dateMatch[0];
+  //         invoiceData.date = rawDate.includes("/")
+  //           ? new Date(rawDate).toISOString().split("T")[0]
+  //           : rawDate;
+  //       }
+  //     }
+
+  //     if (
+  //       line.includes("vendor name") ||
+  //       line.includes("vendor") ||
+  //       line.includes("billed by") ||
+  //       line.includes("billed from") ||
+  //       line.includes("supplier") ||
+  //       line.includes("seller") ||
+  //       line.includes("provided by")
+  //     ) {
+  //       const name = lines[i].split(":")[1]?.trim();
+  //       if (name) invoiceData.vendorName = name;
+  //     }
+
+  //     if (
+  //       line.includes("employee name") ||
+  //       line.includes("employee") ||
+  //       line.includes("billed to") ||
+  //       line.includes("received by") ||
+  //       line.includes("for employee") ||
+  //       line.includes("customer") ||
+  //       line.includes("buyer")
+  //     ) {
+  //       const name = lines[i].split(":")[1]?.trim();
+  //       if (name) invoiceData.employeeName = name;
+  //     }
+
+  //     if (
+  //       line.includes("category") ||
+  //       line.includes("type of expense") ||
+  //       line.includes("expense category")
+  //     ) {
+  //       const category = lines[i].split(":")[1]?.trim();
+  //       if (category) invoiceData.category = category;
+  //     }
+
+  //     if (
+  //       line.includes("gst") ||
+  //       line.includes("GstAmt") ||
+  //       line.includes("tax amount") ||
+  //       line.includes("cgst") ||
+  //       line.includes("sgst")
+  //     ) {
+  //       const gstMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
+  //       if (gstMatch) invoiceData.gstAmount = gstMatch[1];
+  //     }
+
+  //     if (
+  //       line.startsWith("total amount") ||
+  //       line.includes("grand total") ||
+  //       line.includes("amount payable") ||
+  //       line.includes("total payable") ||
+  //       line.includes("total (inr)")
+  //     ) {
+  //       const totalMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
+  //       if (totalMatch) invoiceData.totalAmount = totalMatch[1];
+  //     }
+  //   }
+
+  //   return invoiceData;
+  // };
+
+
   const extractInvoiceData = (text: string) => {
-    const lines = text.split("\n");
-    let invoiceData: Partial<Invoice> = {};
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  let invoiceData: Partial<Invoice> = {};
+  let gstValues: number[] = [];
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim().toLowerCase();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
 
-      // Date (supports multiple labels and formats)
-      if (line.includes("date")) {
-        const dateMatch = line.match(/\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4}/);
-        if (dateMatch) {
-          const rawDate = dateMatch[0];
-          invoiceData.date = rawDate.includes("/")
-            ? new Date(rawDate).toISOString().split("T")[0]
-            : rawDate;
-        }
-      }
+    // 🔹 Vendor Name (first clean text line at top)
+    if (!invoiceData.vendorName && /^[A-Za-z\s]+$/.test(line) && line.length > 3) {
+      invoiceData.vendorName = line;
+    }
 
-      // Vendor / Supplier / Seller / Billed By
-      if (
-        line.includes("vendor name") ||
-        line.includes("vendor") ||
-        line.includes("billed by") ||
-        line.includes("billed from") ||
-        line.includes("supplier") ||
-        line.includes("seller") ||
-        line.includes("provided by")
-      ) {
-        const name = lines[i].split(":")[1]?.trim();
-        if (name) invoiceData.vendorName = name;
-      }
-
-      // Employee / Billed To / Buyer
-      if (
-        line.includes("employee name") ||
-        line.includes("employee") ||
-        line.includes("billed to") ||
-        line.includes("received by") ||
-        line.includes("for employee") ||
-        line.includes("customer") ||
-        line.includes("buyer")
-      ) {
-        const name = lines[i].split(":")[1]?.trim();
-        if (name) invoiceData.employeeName = name;
-      }
-
-      // Category / Type
-      if (
-        line.includes("category") ||
-        line.includes("type of expense") ||
-        line.includes("expense category")
-      ) {
-        const category = lines[i].split(":")[1]?.trim();
-        if (category) invoiceData.category = category;
-      }
-
-      // GST Amount / Tax
-      if (
-        line.includes("gst") ||
-        line.includes("tax amount") ||
-        line.includes("cgst") ||
-        line.includes("sgst")
-      ) {
-        const gstMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
-        if (gstMatch) invoiceData.gstAmount = gstMatch[1];
-      }
-
-      // Total Amount / Grand Total / Amount Payable
-      if (
-        line.startsWith("total amount") ||
-        line.includes("grand total") ||
-        line.includes("amount payable") ||
-        line.includes("total payable") ||
-        line.includes("total (inr)")
-      ) {
-        const totalMatch = lines[i].match(/(\d+(\.\d{1,2})?)/);
-        if (totalMatch) invoiceData.totalAmount = totalMatch[1];
+    // 🔹 Date (supports DD/MM/YYYY or DD-MM-YYYY)
+    if (/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/.test(line)) {
+      const match = line.match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+      if (match) {
+        const rawDate = match[1];
+        invoiceData.date = rawDate.includes("/")
+          ? new Date(rawDate.split("/").reverse().join("-")).toISOString().split("T")[0]
+          : new Date(rawDate.split("-").reverse().join("-")).toISOString().split("T")[0];
       }
     }
 
-    return invoiceData;
-  };
+    // 🔹 GST (collect all SGST/CGST values)
+    if (/gst|sgst|cgst/i.test(line)) {
+      const numbers = line.match(/(\d+(\.\d{1,2})?)/g);
+      if (numbers) {
+        const lastNum = parseFloat(numbers[numbers.length - 1]);
+        if (!isNaN(lastNum)) gstValues.push(lastNum);
+      }
+    }
+
+    // 🔹 Total Amount (handles "Total", "Total Amount", "Grand Total", etc.)
+    if (/total/i.test(line)) {
+      const numbers = line.match(/(\d+(\.\d{1,2})?)/g);
+      if (numbers) {
+        invoiceData.totalAmount = numbers[numbers.length - 1];
+      }
+    }
+  }
+
+  // Sum GST values if found
+  if (gstValues.length > 0) {
+    const gstSum = gstValues.reduce((a, b) => a + b, 0);
+    invoiceData.gstAmount = gstSum.toFixed(2);
+  }
+
+  return invoiceData;
+};
+
+console.log("Extracted Invoice Data:", extractedData);
 
   const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  event: React.ChangeEvent<HTMLInputElement>
+) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
 
-    setSelectedFile(file); // ✅ Save actual File object
+  setSelectedFile(file);
+  const imageUrl = URL.createObjectURL(file);
+  setSelectedImage(imageUrl);
+  setStep("extract");
 
-    const imageUrl = URL.createObjectURL(file);
-    setSelectedImage(imageUrl);
-    setStep("extract");
+  try {
+    const result = await Tesseract.recognize(file, "eng");
+    const text = result.data.text;
+    console.log("OCR Text Result:", text);
 
-    try {
-      const result = await Tesseract.recognize(file, "eng");
-      const text = result.data.text;
-      console.log("OCR Text Result:", text);
+    // 🔹 Call your AI parser
+    const aiRes = await fetch("/api/parse-invoice", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
 
-      const extractedData = extractInvoiceData(text);
+    const aiData = await aiRes.json();
+    console.log("AI Parsed Invoice:", aiData);
 
-      setExtractedData({
-        date: extractedData.date || new Date().toISOString().split("T")[0],
-        vendorName: extractedData.vendorName || "",
-        employeeName: extractedData.employeeName || "",
-        category: extractedData.category || "",
-        gstAmount: extractedData.gstAmount || "0",
-        totalAmount: extractedData.totalAmount || "0",
-        imageUrl,
-      });
+    setExtractedData({
+      date: aiData.date || new Date().toISOString().split("T")[0],
+      vendorName: aiData.vendorName || "",
+      employeeName: aiData.employeeName || "",
+      category: aiData.category || "",
+      gstAmount: aiData.gstAmount || "0",
+      totalAmount: aiData.totalAmount || "0",
+      imageUrl,
+    });
 
-      setStep("confirm");
-    } catch (error) {
-      console.error("OCR error:", error);
-      alert("Failed to extract data from image");
-      setStep("upload");
-    }
-  };
+    setStep("confirm");
+  } catch (error) {
+    console.error("OCR/AI error:", error);
+    alert("Failed to extract data from image");
+    setStep("upload");
+  }
+};
+
 
   const handleInputChange = (field: keyof Invoice, value: string | number) => {
     setExtractedData((prev) => ({ ...prev, [field]: value }));
